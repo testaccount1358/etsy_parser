@@ -5,6 +5,9 @@ import json
 from telegram import Bot
 import yaml
 
+from selenium.webdriver.firefox.options import Options
+
+from selenium.webdriver.common.by import By
 categories = [
     'Accessories',
     'Art+and+Collectibles',
@@ -27,19 +30,19 @@ categories = [
 
 def get_etsy_new_items_for_category(category, page_num=1):
     items_on_pages = []
+    options = Options()
+    options.add_argument('--headless=new')
+    driver = webdriver.Firefox(options=options)
+
     while page_num <= 3:  # Parsing the first 3 pages
         etsy_url = f'https://www.etsy.com/search?q={category}&order=date_desc&page={page_num}'
-        response = requests.get(etsy_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        ordered_lists = soup.find_all('ol')  # Find all ordered lists
+        driver.get(etsy_url)
+        list_items = driver.find_elements(By.XPATH, "//ol/li")
 
-        for ol in ordered_lists:
-            list_items = ol.find_all('li')  # Find list items within each ordered list
-
-            for item in list_items:
-                item_title = item.find('h3').text  # Update the tag based on the actual structure
-                item_link = item.find('a', class_='listing-link')['href']  # Adjust class or structure for link
-                items_on_pages.append({'title': item_title, 'link': item_link})
+        for item in list_items:
+            item_title = item.find_element('h3').text
+            item_link = item.find_element('a', class_='listing-link').get_atribute('href')
+            items_on_pages.append({'title': item_title, 'link': item_link})
 
         page_num += 1
 
